@@ -1,0 +1,9 @@
+services:
+  web:
+    build: .
+    container_name: jenkins-demo-app
+    ports:
+      - "3000:3000"
+    environment:
+      - APP_VERSION=${BUILD_NUMBER:-local}
+    restart: unless-stopped
