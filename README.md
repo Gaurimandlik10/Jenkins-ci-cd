@@ -8,8 +8,6 @@ A Jenkins pipeline that builds, tests and deploys a Node.js (Express) app with D
 2. **Test**: runs `npm test` inside the built image
 3. **Deploy**: restarts the app with Docker Compose and checks `/health`
 
-## Trigger
-Jenkins polls GitHub every 2 minutes (Poll SCM) and starts a build on each new commit.
 
 ## Run locally
     docker compose up -d --build
