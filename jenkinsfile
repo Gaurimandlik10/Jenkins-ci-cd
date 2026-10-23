@@ -1,11 +1,9 @@
-pipeline{
+pipeline {
     agent any
 
     environment {
         IMAGE_NAME = 'jenkins-demo-app'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
-        REGISTRY = 'Gaurimandlik10'
-        REGISTRY_CREDS='dockerhub'
+        IMAGE_TAG  = "${env.BUILD_NUMBER}"
     }
 
     options {
@@ -13,48 +11,36 @@ pipeline{
         disableConcurrentBuilds()
         buildDiscarder(logRotator(numToKeepStr: '10'))
     }
+
+    triggers {
+        pollSCM('H/2 * * * *')
+    }
+
     stages {
-        stage('Checkout'){
-            steps{
-                checkout scm
-            }
-        }
-        stage('Build'){
-            steps{
+        stage('Build') {
+            steps {
                 sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .'
             }
         }
-        stage('Test'){
-            steps{
+
+        stage('Test') {
+            steps {
                 sh 'docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} npm test'
             }
         }
-        stage('Push'){
-            steps {
-                withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDS}",
-                                                  usernameVariable: 'DOCKER_USER',
-                                                  passwordVariable: 'DOCKER_PASS')]) {
-                    sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${REGISTRY}/${IMAGE_NAME}:latest
-                        docker push ${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}
-                        docker push ${REGISTRY}/${IMAGE_NAME}:latest
-                    '''
-                }
-            }
-        }
-        stage('Deploy'){
+
+        stage('Deploy') {
             steps {
                 sh '''
-                    docker compose down || true
+                    docker rm -f jenkins-demo-app || true
                     docker compose up -d --build
-                    sleep 10
-                    docker compose ps
+                    sleep 5
+                    docker exec jenkins-demo-app wget -qO- http://localhost:3000/health
                 '''
             }
         }
     }
+
     post {
         success { echo "Pipeline succeeded: build #${env.BUILD_NUMBER}" }
         failure { echo "Pipeline failed: check the console output" }
