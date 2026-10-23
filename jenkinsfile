@@ -30,7 +30,6 @@ pipeline{
             }
         }
         stage('Push'){
-            when { branch 'main' }
             steps {
                 withCredentials([usernamePassword(credentialsId: "${REGISTRY_CREDS}",
                                                   usernameVariable: 'DOCKER_USER',
@@ -46,7 +45,6 @@ pipeline{
             }
         }
         stage('Deploy'){
-            when { branch 'main' }
             steps {
                 sh '''
                     docker compose down || true
